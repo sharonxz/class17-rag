@@ -1,5 +1,5 @@
 import { ref } from "vue";
-// import { MarkdownTextSplitter } from "@langchain/textsplitters";
+import { MarkdownTextSplitter } from "@langchain/textsplitters";
 import DocumentIndex, { IndexStatus } from "../lib/DocumentIndex";
 import { llmEngine, EMBEDDING_QUERY_PREFIX } from "./localLlm";
 
@@ -15,9 +15,14 @@ export const documentIndex = new DocumentIndex(llmEngine, {
 
 // every markdown file in src/assets/documents/, bundled into the app as text
 // TODO: import documents to chunk
+const files = import.meta.glob("../assets/documents/*.md", { query: "?raw", import: "default", eager: true });
 
 // the documents to search: each file's "# Title" heading (or its file name) and its text
 // TODO: read document contents
+const courseDocuments = Object.entries(files).map(([path, text]) => ({
+  title: getTitle(text) ?? path.split("/").pop(),
+  text: text,
+}));
 
 // the text of the first "# Title" heading: a line that starts with "# " (the m flag makes ^ and $ match each line)
 function getTitle(markdown) {
@@ -57,3 +62,5 @@ function getTitle(markdown) {
 
 // start indexing now (after the model loads).
 // TODO: add courseDocuments to documentIndex
+documentIndex.addDocuments(courseDocuments, { splitter: new MarkdownTextSplitter({ chunkSize: 800, chunkOverlap: 100 }) })
+  .catch((err) => console.error("Failed to index documents", err));

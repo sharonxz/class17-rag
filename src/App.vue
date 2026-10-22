@@ -16,7 +16,10 @@ const NO_RAG_PROMPT = `You are the syllabus assistant for INFO 4340/5440 at Corn
 
 // TODO: system prompt that includes the retrieved chunks
 function buildRagPrompt(sources) {
-  return NO_RAG_PROMPT;
+  const documents = sources.map((source, i) => `[${i + 1}] ${source.text}`).join("\n\n --- \n\n");
+  return `You are the syllabus assistant for INFO 4340/5440 at Cornell University. Answer the student's question using ONLY the documents below. Keep your answer short.
+  Course documents:
+  ${documents}`;
 }
 
 const useRag = ref(false);
@@ -53,8 +56,9 @@ async function sendPrompt() {
     isRetrieving.value = true;
     if (answeredWithRag.value) {
       // TODO: search documentIndex for the 3 chunks - save to sources.value
-
+      sources.value = await documentIndex.search(question, 3);
       // TODO: update systemPromptText with call buildRagPrompt()
+      systemPromptText = buildRagPrompt(sources.value);
     }
     isRetrieving.value = false;
 
